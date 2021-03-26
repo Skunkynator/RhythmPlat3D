@@ -9,6 +9,9 @@ public class PlayerController : MonoBehaviour
     float mouseSensitivity = 1;
     [SerializeField]
     float speed = 10;
+    [SerializeField]
+    float gravityStrength = 9.89f;
+
     Camera playerCamera;
     Rigidbody playerRigid;
     Vector3 forwards = Vector3.forward;
@@ -47,6 +50,11 @@ public class PlayerController : MonoBehaviour
 
         
         playerCamera.transform.eulerAngles = camEuler;
+    }
+
+    void FixedUpdate()
+    {
+        playerRigid.AddForce(-up * gravityStrength,ForceMode.Acceleration);
     }
 
     static private float fixDegree(float degree)
