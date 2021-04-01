@@ -48,7 +48,7 @@ namespace RPlat.Player
         {
             float mouseY = Input.GetAxisRaw("Mouse Y");
             float mouseX = Input.GetAxisRaw("Mouse X");
-            Vector3 camEuler = playerCamera.transform.eulerAngles;
+            Vector3 camEuler = playerCamera.transform.localEulerAngles;
 
             mouseY *= Time.deltaTime * mouseSensitivity;
             mouseX *= Time.deltaTime * mouseSensitivity;
@@ -57,9 +57,11 @@ namespace RPlat.Player
             camEuler.y += mouseX;
             forwards.x = Mathf.Sin(camEuler.y * Mathf.Deg2Rad);
             forwards.z = Mathf.Cos(camEuler.y * Mathf.Deg2Rad);
+            forwards = playerCamera.transform.rotation * Vector3.forward;
             left = Vector3.Cross(forwards, up);
+            forwards = Vector3.Cross(up, left);
 
-            playerCamera.transform.eulerAngles = camEuler;
+            playerCamera.transform.localEulerAngles = camEuler;
         }
 
         void FixedUpdate()
