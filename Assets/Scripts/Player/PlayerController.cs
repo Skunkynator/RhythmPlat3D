@@ -28,6 +28,7 @@ namespace RPlat.Player
         Vector3 forwards = Vector3.forward;
         Vector3 up = Vector3.up;
         Vector3 left = Vector3.left;
+        Vector3 wallNormal = Vector3.left;
 
         int jumpCount = 1;
         // Start is called before the first frame update
@@ -58,28 +59,38 @@ namespace RPlat.Player
             forwards.z = Mathf.Cos(camEuler.y * Mathf.Deg2Rad);
             left = Vector3.Cross(forwards, up);
 
-
-
-
             playerCamera.transform.eulerAngles = camEuler;
         }
 
         void FixedUpdate()
         {
             Vector3 dirControlls = Vector3.zero;
+            Vector3 direction;
 
             dirControlls += Input.GetAxis("Vertical") * forwards;
             dirControlls -= Input.GetAxis("Horizontal") * left;
-            dirControlls = dirControlls.normalized * Mathf.Clamp01(dirControlls.magnitude);
+            direction = dirControlls;
+            dirControlls = fixDir(dirControlls) * Mathf.Clamp01(dirControlls.magnitude);
 
             dirControlls *= Time.deltaTime * speed;
             playerRigid.MovePosition(playerRigid.position + dirControlls);
 
-            playerRigid.AddForce(-up * gravityStrength, ForceMode.Acceleration);
+            if (state != PlayerState.WallSlide)
+            {
+                playerRigid.AddForce(-up * gravityStrength, ForceMode.Acceleration);
+            }
             if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0)
             {
                 playerRigid.velocity = Vector3.zero;
                 playerRigid.AddForce(up * jumpStrength, ForceMode.VelocityChange);
+                if(state == PlayerState.WallSlide)
+                {
+                    float wallModifier = 3;
+                    wallModifier *= 
+                        Mathf.Abs(Vector3.Dot(wallNormal, direction.normalized)) > 0.5f &&
+                        direction.magnitude > 0.2f ? 1 / wallModifier : 1;
+                    playerRigid.AddForce(wallNormal * jumpStrength/wallModifier, ForceMode.VelocityChange);
+                }
                 jumpCount--;
                 state = PlayerState.Jumping;
             }
@@ -88,6 +99,17 @@ namespace RPlat.Player
         static private float fixDegree(float degree)
         {
             return ((degree + 180) % 360) - 180;
+        }
+
+        private Vector3 fixDir(Vector3 dir)
+        {
+            dir = dir.normalized;
+            if(state == PlayerState.WallSlide)
+            {
+                dir =   Vector3.Cross(dir, wallNormal);
+                dir = - Vector3.Cross(dir, wallNormal);
+            }
+            return dir;
         }
 
         void OnValidate()
@@ -102,18 +124,22 @@ namespace RPlat.Player
         }
         void OnCollisionEnter(Collision collision)
         {
-            if (state != PlayerState.Grounded)
+            PlayerState previous = state;
+            foreach (ContactPoint contact in collision.contacts)
             {
-                foreach (ContactPoint contact in collision.contacts)
+                if(previous != PlayerState.Grounded)
                 {
                     checkGrounded(contact);
-                }
-                if (state == PlayerState.Grounded)
-                {
-                    playerRigid.velocity = Vector3.zero;
+                    if(previous != PlayerState.WallSlide)
+                    {
+                        checkWallrunning(contact);
+                    }
                 }
             }
-
+            if (state == PlayerState.Grounded)
+            {
+                playerRigid.velocity = Vector3.zero;
+            }
         }
 
         void OnCollisionStay(Collision collision)
@@ -135,11 +161,20 @@ namespace RPlat.Player
 
         void checkGrounded(ContactPoint contact)
         {
-            Debug.Log(Vector3.Dot(contact.normal, up));
             if (Vector3.Dot(contact.normal, up) >= jumpRefillAngle)
             {
                 state = PlayerState.Grounded;
                 jumpCount = Mathf.Max(jumpCount, jumpRefillAmount);
+            }
+        }
+        void checkWallrunning(ContactPoint contact)
+        {
+            if (Mathf.Abs(Vector3.Dot(contact.normal, up)) <= 0.1f)
+            {
+                state = PlayerState.WallSlide;
+                jumpCount = Mathf.Max(jumpCount, jumpRefillAmount);
+                wallNormal = contact.normal;
+                playerRigid.velocity = Vector3.zero;
             }
         }
     }
