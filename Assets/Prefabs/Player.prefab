@@ -165,12 +165,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 5877245977381678914}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d2993bea6bd173dbb611c79581764c3, type: 3}
+  m_Script: {fileID: 11500000, guid: 928496964494cc941988b5cc870ab3d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mouseSensitivity: 500
+  debugText: {fileID: 0}
+  mouseSensitivity: 1
   speed: 10
-  gravityStrength: 30
-  jumpStrength: 15
+  gravityStrength: 9.89
+  jumpStrength: 10
   jumpRefillAmount: 1
   jumpRefillAngle: 0.75
+  minWallSpeed: 0.5
+  up: {x: 0, y: -1, z: 0}
