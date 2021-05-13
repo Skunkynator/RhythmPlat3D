@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace RPlat.Player
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : Entity
     {
         [SerializeField]
         Text debugText;
@@ -36,37 +36,29 @@ namespace RPlat.Player
         Rigidbody playerRigid;
 
         PlayerState state = PlayerState.Grounded;
-
-        Vector3 forwards = Vector3.forward;
-        [SerializeField]
-        Vector3 up = new Vector3(0, -1, 0);
-        Vector3 left = Vector3.left;
         Vector3 wallNormal = Vector3.left;
         Vector3 controlVelocity = Vector3.zero;
         Vector3 horizontalVel, horizontalModVel;
         float noControlTime = 0;
-        
+
         float speedLimiter1;
         float speedLimiter2;
 
         int jumpCount = 1;
-        
+
         void Start()
         {
             speedLimiter1 = speed / speedSmoothnes + 1 - 1 / (speed / speedSmoothnes + 2);
             speedLimiter2 = 1 - 1 / (speedLimiter1 + 1);
             speedLimiter1 = 1 / speedLimiter1;
-            Cursor.lockState = CursorLockMode.Locked;
             playerCamera = GetComponentInChildren<Camera>();
             playerRigid = GetComponent<Rigidbody>();
-
-            /*TESTING*/
-            QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = 60;
+            onUpdate += handleMouseInput;
+            onPhysicsUpdate += handleMovementInput;
         }
 
         // Update is called once per frame
-        void Update()
+        void handleMouseInput()
         {
             float mouseY = Input.GetAxisRaw("Mouse Y");
             float mouseX = Input.GetAxisRaw("Mouse X");
@@ -86,11 +78,6 @@ namespace RPlat.Player
             playerCamera.transform.localEulerAngles = camEuler;
         }
 
-        void FixedUpdate()
-        {
-            handleMovementInput();
-        }
-
         private void handleMovementInput()
         {
             /*Vector3 hVelocity = Vector3.ProjectOnPlane(playerRigid.velocity, up);
@@ -103,38 +90,38 @@ namespace RPlat.Player
             playerRigid.velocity -= Vector3.ProjectOnPlane(playerRigid.velocity, up);
             debugText.text = "";
             Vector3 dirControlls = Vector3.zero;
-            Vector3 direction =    Vector3.zero;
+            Vector3 direction = Vector3.zero;
 
-            dirControlls += Input.GetAxis("Vertical")   * forwards;
+            dirControlls += Input.GetAxis("Vertical") * forwards;
             dirControlls -= Input.GetAxis("Horizontal") * left;
-            direction += Input.GetAxisRaw("Vertical")   * forwards;
+            direction += Input.GetAxisRaw("Vertical") * forwards;
             direction -= Input.GetAxisRaw("Horizontal") * left;
             direction = direction.normalized * Mathf.Clamp01(direction.magnitude);
             dirControlls = fixDir(dirControlls) * Mathf.Clamp01(dirControlls.magnitude) * speed;
-            
+
             if (state != PlayerState.WallSlide)
             {
                 playerRigid.AddForce(-up * gravityStrength, ForceMode.Acceleration);
             }
-            else if(dirControlls.magnitude < minWallSpeed)
+            else if (dirControlls.magnitude < minWallSpeed)
             {
                 playerRigid.AddForce(-up * gravityStrength * 0.25f, ForceMode.Acceleration);
             }
             //playerRigid.MovePosition(playerRigid.position + dirControlls);
             //playerRigid.AddForce(dirControlls, ForceMode.VelocityChange);
-            
+
             debugText.text += dirControlls;
             if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0)
             {
                 playerRigid.velocity = Vector3.zero;
                 playerRigid.AddForce(up * jumpStrength, ForceMode.VelocityChange);
-                if(state == PlayerState.WallSlide)
+                if (state == PlayerState.WallSlide)
                 {
                     float wallModifier = 3;
                     bool strongJump = Mathf.Abs(Vector3.Dot(wallNormal, direction.normalized)) > 0.5f &&
                         direction.magnitude > 0.2f;
                     //playerRigid.AddForce(wallNormal * jumpStrength/wallModifier, ForceMode.VelocityChange);
-                    horizontalVel = wallNormal * jumpStrength/(strongJump ? 1 : wallModifier);
+                    horizontalVel = wallNormal * jumpStrength / (strongJump ? 1 : wallModifier);
                     horizontalModVel = Vector3.zero;
                     noControlTime = noWallJumpControllTime * Mathf.Sqrt(strongJump ? wallModifier : 1);
                 }
@@ -143,13 +130,13 @@ namespace RPlat.Player
             }
             //horizontalVel = Vector3.SmoothDamp(horizontalVel, Vector3.zero, ref horizontalModVel, 0.5f, float.MaxValue, Time.fixedDeltaTime);
             Vector3 velChange = (1 - 1 / (horizontalVel.magnitude / speedSmoothnes + speedLimiter2) + speedLimiter1) * -horizontalVel.normalized;
-                noControlTime -= Time.fixedDeltaTime;
-            if(noControlTime > 0)
+            noControlTime -= Time.fixedDeltaTime;
+            if (noControlTime > 0)
             {
                 dirControlls *= 0.3f;
                 direction *= 0.3f;
             }
-                horizontalVel = (velChange * speed + dirControlls) * Time.fixedDeltaTime * accelaration * (direction.magnitude * 0.8f + 0.2f) + horizontalVel;
+            horizontalVel = (velChange * speed + dirControlls) * Time.fixedDeltaTime * accelaration * (direction.magnitude * 0.8f + 0.2f) + horizontalVel;
             playerRigid.velocity += horizontalVel;
             //controlVelocity = dirControlls;
             debugText.text += "\n" + horizontalVel;
@@ -163,10 +150,10 @@ namespace RPlat.Player
         private Vector3 fixDir(Vector3 dir)
         {
             dir = dir.normalized;
-            if(state == PlayerState.WallSlide)
+            if (state == PlayerState.WallSlide)
             {
-                dir =   Vector3.Cross(dir, wallNormal);
-                dir = - Vector3.Cross(dir, wallNormal);
+                dir = Vector3.Cross(dir, wallNormal);
+                dir = -Vector3.Cross(dir, wallNormal);
             }
             return dir;
         }
@@ -186,10 +173,10 @@ namespace RPlat.Player
             PlayerState previous = state;
             foreach (ContactPoint contact in collision.contacts)
             {
-                if(previous != PlayerState.Grounded)
+                if (previous != PlayerState.Grounded)
                 {
                     checkGrounded(contact);
-                    if(previous != PlayerState.WallSlide)
+                    if (previous != PlayerState.WallSlide)
                     {
                         checkWallrunning(contact);
                     }
