@@ -12,8 +12,9 @@ public class Entity : MonoBehaviour
     float gravitySharpness = 0.5f;
 
     private Vector3 gravityDir = new Vector3(0,-1,0);
-    private float gravityStrength = 1;
+    private float gravityFieldStrength = 1;
     protected Vector3 left = Vector3.left;
+    private List<GravityArea> currentGravs = new List<GravityArea>();
 
     public UnityAction onUpdate;
     public UnityAction onPhysicsUpdate;
@@ -27,7 +28,7 @@ public class Entity : MonoBehaviour
         set
         {
             gravityDir = value.normalized;
-            gravityStrength = value.magnitude;
+            gravityFieldStrength = value.magnitude;
         }
     }
 
@@ -42,5 +43,24 @@ public class Entity : MonoBehaviour
     void FixedUpdate()
     {
         onPhysicsUpdate?.Invoke();
+    }
+    public void addGravityArea(GravityArea area)
+    {
+        currentGravs.Add(area);
+    }
+    public void removeGravityArea(GravityArea area)
+    {
+        currentGravs.Remove(area);
+    }
+    void UpdateGravity()
+    {
+        if(currentGravs.Count == 0)
+            return;
+        Vector3 curr = Vector3.zero;
+        foreach (GravityArea gravityArea in currentGravs)
+        {
+            curr += gravityArea.getGravity(transform.position); 
+        }
+        gravityDir = curr.normalized;
     }
 }
