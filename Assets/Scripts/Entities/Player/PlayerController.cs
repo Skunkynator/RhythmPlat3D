@@ -1,16 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RPlat.Player
 {
     [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : Entity
     {
-        [SerializeField]
-        Text debugText;
-
         [SerializeField]
         float mouseSensitivity = 1;
         [SerializeField]
@@ -88,7 +84,6 @@ namespace RPlat.Player
 
             transform.up = up;
             playerRigid.velocity -= Vector3.ProjectOnPlane(playerRigid.velocity, up);
-            debugText.text = "";
             Vector3 dirControlls = Vector3.zero;
             Vector3 direction = Vector3.zero;
 
@@ -109,8 +104,6 @@ namespace RPlat.Player
             }
             //playerRigid.MovePosition(playerRigid.position + dirControlls);
             //playerRigid.AddForce(dirControlls, ForceMode.VelocityChange);
-
-            debugText.text += dirControlls;
             if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0)
             {
                 playerRigid.velocity = Vector3.zero;
@@ -139,7 +132,6 @@ namespace RPlat.Player
             horizontalVel = (velChange * speed + dirControlls) * Time.fixedDeltaTime * accelaration * (direction.magnitude * 0.8f + 0.2f) + horizontalVel;
             playerRigid.velocity += horizontalVel;
             //controlVelocity = dirControlls;
-            debugText.text += "\n" + horizontalVel;
         }
 
         static private float fixDegree(float degree)
