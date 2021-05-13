@@ -136,8 +136,8 @@ CapsuleCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  m_Radius: 0.5
-  m_Height: 2
+  m_Radius: 0.35
+  m_Height: 1.5
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &4898178586348873485
@@ -168,12 +168,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 928496964494cc941988b5cc870ab3d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  up: {x: 0, y: 1, z: 0}
+  gravitySharpness: 0.5
   debugText: {fileID: 0}
-  mouseSensitivity: 1
+  mouseSensitivity: 150
   speed: 10
-  gravityStrength: 9.89
-  jumpStrength: 10
+  accelaration: 20
+  gravityStrength: 26.37333
+  jumpStrength: 13
   jumpRefillAmount: 1
-  jumpRefillAngle: 0.75
-  minWallSpeed: 0.5
-  up: {x: 0, y: -1, z: 0}
+  jumpRefillAngle: 0.1
+  minWallSpeed: 3
+  speedSmoothnes: 20
+  noWallJumpControllTime: 0.15
