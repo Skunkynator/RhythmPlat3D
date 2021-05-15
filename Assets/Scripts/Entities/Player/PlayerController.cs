@@ -130,6 +130,7 @@ namespace RPlat.Player
                 direction *= 0.3f;
             }
             horizontalVel = (velChange * speed + dirControlls) * Time.fixedDeltaTime * accelaration * (direction.magnitude * 0.8f + 0.2f) + horizontalVel;
+            horizontalVel = Vector3.ProjectOnPlane(horizontalVel, up);
             playerRigid.velocity += horizontalVel;
             //controlVelocity = dirControlls;
         }
