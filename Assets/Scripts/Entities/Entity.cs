@@ -18,6 +18,8 @@ public class Entity : MonoBehaviour
 
     public UnityAction onUpdate;
     public UnityAction onPhysicsUpdate;
+    
+    private Vector3 quatForwards = Vector3.forward;
 
     public Vector3 Gravity
     {
@@ -34,9 +36,12 @@ public class Entity : MonoBehaviour
 
     void Update()
     {
+        UpdateGravity();
         float blend = 1 - Mathf.Pow(1 - gravitySharpness, Time.deltaTime);
-        up = Vector3.Slerp(up, -gravityDir, blend);
-        transform.up = up;   
+        up = Vector3.Slerp(up, -gravityDir, blend).normalized;
+        quatForwards = -Vector3.Cross(up,quatForwards).normalized;
+        quatForwards =  Vector3.Cross(up,quatForwards).normalized;
+        transform.rotation = Quaternion.LookRotation(quatForwards, up);
         onUpdate?.Invoke();
     }
 
@@ -61,6 +66,6 @@ public class Entity : MonoBehaviour
         {
             curr += gravityArea.getGravity(transform.position); 
         }
-        gravityDir = curr.normalized;
+        this.Gravity = curr.normalized;
     }
 }
