@@ -27,6 +27,8 @@ namespace RPlat.Player
         float speedSmoothnes = 20;
         [SerializeField]
         float noWallJumpControllTime = 0.75f;
+        [SerializeField]
+        float gravitySharpness = 0.999f;
 
         Camera playerCamera;
         Rigidbody playerRigid;
@@ -35,6 +37,9 @@ namespace RPlat.Player
         Vector3 wallNormal = Vector3.left;
         Vector3 controlVelocity = Vector3.zero;
         Vector3 horizontalVel, horizontalModVel;
+        private Vector3 camQuatForward = Vector3.forward;
+        private Vector3 camQuatUp = Vector3.up;
+        public Vector3 camEuler = Vector3.zero;
         float noControlTime = 0;
 
         float speedLimiter1;
@@ -57,17 +62,21 @@ namespace RPlat.Player
         {
             float mouseY = Input.GetAxisRaw("Mouse Y");
             float mouseX = Input.GetAxisRaw("Mouse X");
-            Vector3 camEuler = playerCamera.transform.localEulerAngles;
+            float blend = 1 - Mathf.Pow(1 - gravitySharpness, Time.deltaTime);
+
+            camQuatForward = Vector3.Slerp(camQuatForward, quatForwards, blend).normalized;
+            camQuatUp      = Vector3.Slerp(camQuatUp     , up          , blend).normalized;
+            //camEuler = playerCamera.transform.localEulerAngles;
 
             mouseY *= Time.deltaTime * mouseSensitivity;
             mouseX *= Time.deltaTime * mouseSensitivity;
             camEuler.x = Mathf.Clamp(fixDegree(camEuler.x - mouseY), -87, 87);
             camEuler.y += mouseX;
-            playerCamera.transform.localEulerAngles = camEuler;
+            //playerCamera.transform.localEulerAngles = camEuler;
             forwards = playerCamera.transform.rotation * Vector3.forward;
             forwards = Vector3.ProjectOnPlane(forwards, up).normalized;
             left = Vector3.Cross(forwards.normalized, up).normalized;
-
+            playerCamera.transform.rotation = Quaternion.LookRotation(camQuatForward,camQuatUp) * Quaternion.Euler(camEuler);
         }
 
         private void handleMovementInput()

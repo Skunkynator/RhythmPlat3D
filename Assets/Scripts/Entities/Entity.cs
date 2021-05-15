@@ -8,8 +8,6 @@ public class Entity : MonoBehaviour
     protected Vector3 forwards = Vector3.forward;
     [SerializeField]
     protected Vector3 up = new Vector3(0, -1, 0);
-    [SerializeField]
-    float gravitySharpness = 0.5f;
 
     private Vector3 gravityDir = new Vector3(0,-1,0);
     private float gravityFieldStrength = 1;
@@ -19,7 +17,7 @@ public class Entity : MonoBehaviour
     public UnityAction onUpdate;
     public UnityAction onPhysicsUpdate;
     
-    private Vector3 quatForwards = Vector3.forward;
+    protected Vector3 quatForwards = Vector3.forward;
 
     public Vector3 Gravity
     {
@@ -37,8 +35,6 @@ public class Entity : MonoBehaviour
     void Update()
     {
         UpdateGravity();
-        float blend = 1 - Mathf.Pow(1 - gravitySharpness, Time.deltaTime);
-        up = Vector3.Slerp(up, -gravityDir, blend).normalized;
         quatForwards = -Vector3.Cross(up,quatForwards).normalized;
         quatForwards =  Vector3.Cross(up,quatForwards).normalized;
         transform.rotation = Quaternion.LookRotation(quatForwards, up);
@@ -67,5 +63,6 @@ public class Entity : MonoBehaviour
             curr += gravityArea.getGravity(transform.position); 
         }
         this.Gravity = curr.normalized;
+        this.up = -this.gravityDir;
     }
 }
