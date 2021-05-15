@@ -27,6 +27,8 @@ namespace RPlat.Player
         float speedSmoothnes = 20;
         [SerializeField]
         float noWallJumpControllTime = 0.75f;
+        [SerializeField]
+        float gravitySharpness = 0.999f;
 
         Camera playerCamera;
         Rigidbody playerRigid;
@@ -35,6 +37,9 @@ namespace RPlat.Player
         Vector3 wallNormal = Vector3.left;
         Vector3 controlVelocity = Vector3.zero;
         Vector3 horizontalVel, horizontalModVel;
+        private Vector3 camQuatForward = Vector3.forward;
+        private Vector3 camQuatUp = Vector3.up;
+        public Vector3 camEuler = Vector3.zero;
         float noControlTime = 0;
 
         float speedLimiter1;
@@ -53,40 +58,33 @@ namespace RPlat.Player
             onPhysicsUpdate += handleMovementInput;
         }
 
-        // Update is called once per frame
         void handleMouseInput()
         {
             float mouseY = Input.GetAxisRaw("Mouse Y");
             float mouseX = Input.GetAxisRaw("Mouse X");
-            Vector3 camEuler = playerCamera.transform.localEulerAngles;
+            float blend = 1 - Mathf.Pow(1 - gravitySharpness, Time.deltaTime);
+
+            camQuatForward = Vector3.Slerp(camQuatForward, quatForwards, blend).normalized;
+            camQuatUp      = Vector3.Slerp(camQuatUp     , up          , blend).normalized;
+            //camEuler = playerCamera.transform.localEulerAngles;
 
             mouseY *= Time.deltaTime * mouseSensitivity;
             mouseX *= Time.deltaTime * mouseSensitivity;
-            //Debug.Log(euler.x);
             camEuler.x = Mathf.Clamp(fixDegree(camEuler.x - mouseY), -87, 87);
             camEuler.y += mouseX;
-            forwards.x = Mathf.Sin(camEuler.y * Mathf.Deg2Rad);
-            forwards.z = Mathf.Cos(camEuler.y * Mathf.Deg2Rad);
+            //playerCamera.transform.localEulerAngles = camEuler;
             forwards = playerCamera.transform.rotation * Vector3.forward;
-            left = Vector3.Cross(forwards, up).normalized;
-            forwards = Vector3.Cross(up, left).normalized;
-
-            playerCamera.transform.localEulerAngles = camEuler;
+            forwards = Vector3.ProjectOnPlane(forwards, up).normalized;
+            left = Vector3.Cross(forwards.normalized, up).normalized;
+            playerCamera.transform.rotation = Quaternion.LookRotation(camQuatForward,camQuatUp) * Quaternion.Euler(camEuler);
         }
 
         private void handleMovementInput()
         {
-            /*Vector3 hVelocity = Vector3.ProjectOnPlane(playerRigid.velocity, up);
-            if(hVelocity.magnitude < controlVelocity.magnitude && Vector3.Dot(hVelocity.normalized, -controlVelocity.normalized) < -0.5f)
-            {
-                hVelocity = controlVelocity;
-            }*/
-
             transform.up = up;
             playerRigid.velocity -= Vector3.ProjectOnPlane(playerRigid.velocity, up);
             Vector3 dirControlls = Vector3.zero;
             Vector3 direction = Vector3.zero;
-
             dirControlls += Input.GetAxis("Vertical") * forwards;
             dirControlls -= Input.GetAxis("Horizontal") * left;
             direction += Input.GetAxisRaw("Vertical") * forwards;
@@ -102,18 +100,16 @@ namespace RPlat.Player
             {
                 playerRigid.AddForce(-up * gravityStrength * 0.25f, ForceMode.Acceleration);
             }
-            //playerRigid.MovePosition(playerRigid.position + dirControlls);
-            //playerRigid.AddForce(dirControlls, ForceMode.VelocityChange);
             if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0)
             {
                 playerRigid.velocity = Vector3.zero;
                 playerRigid.AddForce(up * jumpStrength, ForceMode.VelocityChange);
+        
                 if (state == PlayerState.WallSlide)
                 {
                     float wallModifier = 3;
                     bool strongJump = Mathf.Abs(Vector3.Dot(wallNormal, direction.normalized)) > 0.5f &&
                         direction.magnitude > 0.2f;
-                    //playerRigid.AddForce(wallNormal * jumpStrength/wallModifier, ForceMode.VelocityChange);
                     horizontalVel = wallNormal * jumpStrength / (strongJump ? 1 : wallModifier);
                     horizontalModVel = Vector3.zero;
                     noControlTime = noWallJumpControllTime * Mathf.Sqrt(strongJump ? wallModifier : 1);
@@ -121,7 +117,6 @@ namespace RPlat.Player
                 jumpCount--;
                 state = PlayerState.Jumping;
             }
-            //horizontalVel = Vector3.SmoothDamp(horizontalVel, Vector3.zero, ref horizontalModVel, 0.5f, float.MaxValue, Time.fixedDeltaTime);
             Vector3 velChange = (1 - 1 / (horizontalVel.magnitude / speedSmoothnes + speedLimiter2) + speedLimiter1) * -horizontalVel.normalized;
             noControlTime -= Time.fixedDeltaTime;
             if (noControlTime > 0)
@@ -130,8 +125,8 @@ namespace RPlat.Player
                 direction *= 0.3f;
             }
             horizontalVel = (velChange * speed + dirControlls) * Time.fixedDeltaTime * accelaration * (direction.magnitude * 0.8f + 0.2f) + horizontalVel;
+            horizontalVel = Vector3.ProjectOnPlane(horizontalVel, up);
             playerRigid.velocity += horizontalVel;
-            //controlVelocity = dirControlls;
         }
 
         static private float fixDegree(float degree)
